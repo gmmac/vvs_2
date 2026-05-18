@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,15 +36,16 @@ public class TicketmasterProvider implements EventProvider {
     @Override
     public List<DiscoveredEvent> search(String query) {
         if (!isConfigured()) return List.of();
-        URI uri = UriComponentsBuilder.fromPath("/events.json")
+        // toUriString() returns a relative path; RestClient resolves it against baseUrl.
+        // Passing URI directly bypasses baseUrl resolution and breaks with "undefined scheme".
+        String path = UriComponentsBuilder.fromPath("/events.json")
                 .queryParam("keyword", query)
                 .queryParam("size", 20)
                 .queryParam("apikey", apiKey)
-                .build()
-                .toUri();
+                .toUriString();
         try {
             Response body = http.get()
-                    .uri(uri)
+                    .uri(path)
                     .retrieve()
                     .onStatus(HttpStatusCode::isError, (req, res) -> {
                         log.warn("Ticketmaster search failed: {}", res.getStatusCode());

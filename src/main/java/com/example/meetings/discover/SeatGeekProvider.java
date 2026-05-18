@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -38,15 +37,14 @@ public class SeatGeekProvider implements EventProvider {
     @Override
     public List<DiscoveredEvent> search(String query) {
         if (!isConfigured()) return List.of();
-        URI uri = UriComponentsBuilder.fromPath("/events")
+        String path = UriComponentsBuilder.fromPath("/events")
                 .queryParam("q", query)
                 .queryParam("per_page", 20)
                 .queryParam("client_id", clientId)
-                .build()
-                .toUri();
+                .toUriString();
         try {
             Response body = http.get()
-                    .uri(uri)
+                    .uri(path)
                     .retrieve()
                     .onStatus(HttpStatusCode::isError, (req, res) ->
                             log.warn("SeatGeek search failed: {}", res.getStatusCode()))
