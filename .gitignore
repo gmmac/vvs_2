@@ -4,8 +4,8 @@ data/
 
 .env
 application-local.properties
-src/main/resources/application-local.properties
-src/test/resources/application-local.properties
+src/main/resources/application.properties
+src/test/resources/application.properties
 
 
 .idea/
