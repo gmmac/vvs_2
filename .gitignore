@@ -5,7 +5,7 @@ data/
 .env
 application-local.properties
 src/main/resources/application.properties
-src/main/resources/application-test.properties
+#src/main/resources/application-test.properties
 
 
 
