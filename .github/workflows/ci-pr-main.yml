@@ -1,0 +1,40 @@
+name: CI - Pull Request to Main
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  integration-and-e2e-tests:
+    name: Run integration and end-to-end tests
+    runs-on: ubuntu-latest
+
+    env:
+      CHROME_BINARY: /usr/bin/google-chrome
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Check Google Chrome version
+        run: |
+          google-chrome --version
+          CHROME_MAJOR_VERSION=$(google-chrome --version | grep -oP '\d+' | head -1)
+          echo "CHROME_VERSION=$CHROME_MAJOR_VERSION" >> $GITHUB_ENV
+          echo "Using Chrome major version: $CHROME_MAJOR_VERSION"
+
+      - name: Run integration tests
+        run: |
+          mvn -Dtest="*IntegrationTest,*DatabaseIntegrationTest" test
+
+      - name: Run end-to-end tests
+        run: |
+          mvn -Dtest=MeetingEndToEndTest test
