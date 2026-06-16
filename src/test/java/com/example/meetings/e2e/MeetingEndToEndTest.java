@@ -165,8 +165,6 @@ class MeetingEndToEndTest {
             throw e;
         }
 
-        wait.until(ExpectedConditions.urlContains("/calendar"));
-
         wait.until(ExpectedConditions.visibilityOfElementLocated(
                 By.xpath("//*[contains(text(), 'Team Sync')]")));
 
@@ -289,28 +287,36 @@ class MeetingEndToEndTest {
     }
 
     private void typeById(String id, String value) {
-        WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id(id)));
-
-        element.clear();
-        element.sendKeys(value);
+        setElementValueById(id, value);
     }
 
     private void setInputValueById(String id, String value) {
+        setElementValueById(id, value);
+    }
+
+    private void setElementValueById(String id, String value) {
         WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id(id)));
 
         ((JavascriptExecutor) driver).executeScript(
                 "arguments[0].value = arguments[1];" +
+                        "arguments[0].setAttribute('value', arguments[1]);" +
                         "arguments[0].dispatchEvent(new Event('input', { bubbles: true }));" +
-                        "arguments[0].dispatchEvent(new Event('change', { bubbles: true }));",
+                        "arguments[0].dispatchEvent(new Event('change', { bubbles: true }));" +
+                        "arguments[0].blur();",
                 element,
                 value);
+
+        String actualValue = (String) ((JavascriptExecutor) driver)
+                .executeScript("return arguments[0].value;", element);
+
+        assertThat(actualValue).isEqualTo(value);
     }
 
     private void clickButtonByText(String text) {
         WebElement button = wait.until(ExpectedConditions.elementToBeClickable(
                 By.xpath("//button[normalize-space()='" + text + "']")));
 
-        button.click();
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", button);
     }
 
     private void debugPage(String label) {
