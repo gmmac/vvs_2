@@ -158,6 +158,13 @@ class MeetingEndToEndTest {
                 "2026-06-21T11:00",
                 "invitee");
 
+        try {
+            wait.until(ExpectedConditions.urlContains("/calendar"));
+        } catch (Exception e) {
+            debugPage("after creating meeting with invitee");
+            throw e;
+        }
+
         wait.until(ExpectedConditions.urlContains("/calendar"));
 
         wait.until(ExpectedConditions.visibilityOfElementLocated(
@@ -298,5 +305,12 @@ class MeetingEndToEndTest {
                 By.xpath("//button[normalize-space()='" + text + "']")));
 
         button.click();
+    }
+
+    private void debugPage(String label) {
+        System.out.println("===== DEBUG PAGE: " + label + " =====");
+        System.out.println("Current URL: " + driver.getCurrentUrl());
+        System.out.println(driver.getPageSource());
+        System.out.println("===== END DEBUG PAGE =====");
     }
 }
