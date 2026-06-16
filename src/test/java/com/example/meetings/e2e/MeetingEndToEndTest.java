@@ -279,6 +279,12 @@ class MeetingEndToEndTest {
             typeById("invitees", participantUsername);
         }
 
+        debugInputValue("title");
+        debugInputValue("description");
+        debugInputValue("start");
+        debugInputValue("end");
+        debugInputValue("invitees");
+
         clickButtonByText("Propose");
     }
 
@@ -312,5 +318,22 @@ class MeetingEndToEndTest {
         System.out.println("Current URL: " + driver.getCurrentUrl());
         System.out.println(driver.getPageSource());
         System.out.println("===== END DEBUG PAGE =====");
+    }
+
+    private void debugInputValue(String id) {
+        WebElement element = wait.until(ExpectedConditions.presenceOfElementLocated(By.id(id)));
+
+        Object value = ((JavascriptExecutor) driver)
+                .executeScript("return arguments[0].value;", element);
+
+        Object valid = ((JavascriptExecutor) driver)
+                .executeScript("return arguments[0].checkValidity();", element);
+
+        Object message = ((JavascriptExecutor) driver)
+                .executeScript("return arguments[0].validationMessage;", element);
+
+        System.out.println("INPUT DEBUG [" + id + "] value=" + value
+                + " valid=" + valid
+                + " message=" + message);
     }
 }
