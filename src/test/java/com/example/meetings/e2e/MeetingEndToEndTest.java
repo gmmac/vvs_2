@@ -70,12 +70,15 @@ class MeetingEndToEndTest {
         meetingRepository.deleteAll();
         userRepository.deleteAll();
 
+        String chromeVersion = System.getenv().getOrDefault("CHROME_VERSION", "148");
+        String chromeBinary = System.getenv().getOrDefault("CHROME_BINARY", "/usr/sbin/chromium");
+
         WebDriverManager.chromedriver()
-                .browserVersion("148")
+                .browserVersion(chromeVersion)
                 .setup();
 
         ChromeOptions options = new ChromeOptions();
-        options.setBinary("/usr/sbin/chromium");
+        options.setBinary(chromeBinary);
         options.addArguments("--headless=new");
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
@@ -124,8 +127,7 @@ class MeetingEndToEndTest {
                 "Discuss project progress",
                 "2026-06-20T10:00",
                 "2026-06-20T11:00",
-                null
-        );
+                null);
 
         wait.until(ExpectedConditions.urlContains("/calendar"));
 
@@ -154,8 +156,7 @@ class MeetingEndToEndTest {
                 "Weekly synchronization meeting",
                 "2026-06-21T10:00",
                 "2026-06-21T11:00",
-                "invitee"
-        );
+                "invitee");
 
         wait.until(ExpectedConditions.urlContains("/calendar"));
 
@@ -199,8 +200,7 @@ class MeetingEndToEndTest {
                 "Initial meeting",
                 "2026-06-22T10:00",
                 "2026-06-22T11:00",
-                null
-        );
+                null);
 
         wait.until(ExpectedConditions.urlContains("/calendar"));
 
@@ -212,8 +212,7 @@ class MeetingEndToEndTest {
                 "This meeting overlaps with another one",
                 "2026-06-22T10:30",
                 "2026-06-22T11:30",
-                null
-        );
+                null);
 
         assertThat(meetingRepository.findAll())
                 .extracting("title")
@@ -225,8 +224,7 @@ class MeetingEndToEndTest {
         User user = new User(
                 username,
                 email,
-                passwordEncoder.encode(RAW_PASSWORD)
-        );
+                passwordEncoder.encode(RAW_PASSWORD));
 
         return userRepository.saveAndFlush(user);
     }
@@ -292,8 +290,7 @@ class MeetingEndToEndTest {
                         "arguments[0].dispatchEvent(new Event('input', { bubbles: true }));" +
                         "arguments[0].dispatchEvent(new Event('change', { bubbles: true }));",
                 element,
-                value
-        );
+                value);
     }
 
     private void clickButtonByText(String text) {
