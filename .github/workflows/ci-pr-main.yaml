@@ -33,7 +33,7 @@ jobs:
 
       - name: Run integration tests
         run: |
-          mvn -Dtest="*IntegrationTest,*DatabaseIntegrationTest" test
+          mvn -Dtest="com.example.meetings.integrationTests.db.*Test,com.example.meetings.integrationTests.restApi.*Test,com.example.meetings.integrationTests.thirdParties.*Test" test
 
       - name: Run end-to-end tests
         run: |
