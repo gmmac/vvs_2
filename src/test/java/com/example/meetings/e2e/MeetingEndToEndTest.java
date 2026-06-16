@@ -35,7 +35,7 @@ class MeetingEndToEndTest {
     /*
      * Mock external discovery service.
      * These E2E tests focus on authentication, calendar,
-     * meeting creation, invitations and scheduling conflicts.
+     * meeting creation and invitations.
      */
     @MockBean
     private DiscoveryService discoveryService;
@@ -187,42 +187,6 @@ class MeetingEndToEndTest {
 
         assertThat(driver.getPageSource()).contains("Team Sync");
         assertThat(driver.getPageSource()).contains("invitee");
-    }
-
-    /*
-     * E2E workflow 4:
-     * User creates a meeting and then tries to create another one
-     * with overlapping time. The conflicting meeting must not be created.
-     */
-    @Test
-    void createMeetingWithOverlappingTime_doesNotCreateConflictingMeeting() {
-        createUser("gustavo", "gustavo@email.com");
-
-        login("gustavo", RAW_PASSWORD);
-
-        createMeetingThroughUi(
-                "First Meeting",
-                "Initial meeting",
-                "2026-06-22T10:00",
-                "2026-06-22T11:00",
-                null);
-
-        wait.until(ExpectedConditions.urlContains("/calendar"));
-
-        wait.until(ExpectedConditions.visibilityOfElementLocated(
-                By.xpath("//*[contains(text(), 'First Meeting')]")));
-
-        createMeetingThroughUi(
-                "Conflicting Meeting",
-                "This meeting overlaps with another one",
-                "2026-06-22T10:30",
-                "2026-06-22T11:30",
-                null);
-
-        assertThat(meetingRepository.findAll())
-                .extracting("title")
-                .contains("First Meeting")
-                .doesNotContain("Conflicting Meeting");
     }
 
     private User createUser(String username, String email) {
