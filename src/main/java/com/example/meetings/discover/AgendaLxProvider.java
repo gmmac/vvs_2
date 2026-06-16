@@ -45,6 +45,18 @@ public class AgendaLxProvider implements EventProvider {
                 .build();
     }
 
+    /*
+    * Constructor used only in integration tests
+    */
+    public AgendaLxProvider(String baseUrl) {
+        this.http = RestClient.builder()
+                .baseUrl(baseUrl)
+                .defaultHeader("User-Agent",
+                        "Mozilla/5.0 (compatible; meetings-app/0.1; +http://localhost)")
+                .build();
+    }
+
+
     @Override public String name() { return "Agenda Cultural de Lisboa"; }
 
     @Override public boolean isConfigured() { return true; } // public endpoint, no creds

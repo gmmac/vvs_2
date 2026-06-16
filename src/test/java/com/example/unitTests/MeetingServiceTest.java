@@ -1,4 +1,4 @@
-package com.example.meetings.service.unitTests;
+package com.example.unitTests;
 
 import com.example.meetings.discover.DiscoveredEvent;
 import com.example.meetings.model.InviteStatus;

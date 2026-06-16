@@ -1,4 +1,4 @@
-package com.example.meetings.service.unitTests;
+package com.example.unitTests;
 
 import com.example.meetings.model.User;
 import com.example.meetings.repository.UserRepository;
