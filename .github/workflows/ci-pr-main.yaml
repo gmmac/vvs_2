@@ -12,6 +12,7 @@ jobs:
 
     env:
       CHROME_BINARY: /usr/bin/google-chrome
+      TZ: Europe/Lisbon
 
     steps:
       - name: Checkout repository
@@ -33,8 +34,8 @@ jobs:
 
       - name: Run integration tests
         run: |
-          mvn -Dtest="com.example.meetings.integrationTests.db.*Test,com.example.meetings.integrationTests.restApi.*Test,com.example.meetings.integrationTests.thirdParties.*Test" test
+          mvn -Duser.timezone=Europe/Lisbon -Dtest="com.example.meetings.integrationTests.db.*Test,com.example.meetings.integrationTests.restApi.*Test,com.example.meetings.integrationTests.thirdParties.*Test" test
 
       - name: Run end-to-end tests
         run: |
-          mvn -Dtest=MeetingEndToEndTest test
+          mvn -Duser.timezone=Europe/Lisbon -Dtest=MeetingEndToEndTest test
