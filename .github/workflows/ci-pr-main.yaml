@@ -11,8 +11,9 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      CHROME_BINARY: /usr/bin/google-chrome
       TZ: Europe/Lisbon
+      CHROME_VERSION: 148
+      CHROME_BINARY: ${{ github.workspace }}/chrome-linux64/chrome
 
     steps:
       - name: Checkout repository
@@ -25,12 +26,20 @@ jobs:
           java-version: 21
           cache: maven
 
-      - name: Check Google Chrome version
+      - name: Install Chrome 148
         run: |
-          google-chrome --version
-          CHROME_MAJOR_VERSION=$(google-chrome --version | grep -oP '\d+' | head -1)
-          echo "CHROME_VERSION=$CHROME_MAJOR_VERSION" >> $GITHUB_ENV
-          echo "Using Chrome major version: $CHROME_MAJOR_VERSION"
+          wget https://storage.googleapis.com/chrome-for-testing-public/148.0.7778.178/linux64/chrome-linux64.zip
+          unzip chrome-linux64.zip
+          chmod +x chrome-linux64/chrome
+          ./chrome-linux64/chrome --version
+
+      - name: Debug environment
+        run: |
+          date
+          echo "TZ=$TZ"
+          echo "CHROME_VERSION=$CHROME_VERSION"
+          echo "CHROME_BINARY=$CHROME_BINARY"
+          $CHROME_BINARY --version
 
       - name: Run integration tests
         run: |
