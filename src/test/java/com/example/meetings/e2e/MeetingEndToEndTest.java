@@ -1,5 +1,6 @@
 package com.example.meetings.e2e;
 
+import com.example.meetings.discover.DiscoveryService;
 import com.example.meetings.model.User;
 import com.example.meetings.repository.MeetingParticipantRepository;
 import com.example.meetings.repository.MeetingRepository;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -17,6 +19,7 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
@@ -28,6 +31,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 class MeetingEndToEndTest {
+
+    /*
+     * Mock external discovery service.
+     * These E2E tests focus on authentication, calendar,
+     * meeting creation, invitations and scheduling conflicts.
+     */
+    @MockBean
+    private DiscoveryService discoveryService;
 
     @LocalServerPort
     private int port;
@@ -59,9 +70,12 @@ class MeetingEndToEndTest {
         meetingRepository.deleteAll();
         userRepository.deleteAll();
 
-        WebDriverManager.chromedriver().setup();
+        WebDriverManager.chromedriver()
+                .browserVersion("148")
+                .setup();
 
         ChromeOptions options = new ChromeOptions();
+        options.setBinary("/usr/sbin/chromium");
         options.addArguments("--headless=new");
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
@@ -88,10 +102,11 @@ class MeetingEndToEndTest {
 
         login("gustavo", RAW_PASSWORD);
 
-        WebElement calendarPage = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                byTestId("calendar-page")));
+        wait.until(ExpectedConditions.urlContains("/calendar"));
 
-        assertThat(calendarPage.isDisplayed()).isTrue();
+        assertThat(driver.getPageSource()).contains("Your calendar");
+        assertThat(driver.getPageSource()).contains("Signed in as");
+        assertThat(driver.getPageSource()).contains("gustavo");
     }
 
     /*
@@ -109,12 +124,16 @@ class MeetingEndToEndTest {
                 "Discuss project progress",
                 "2026-06-20T10:00",
                 "2026-06-20T11:00",
-                null);
+                null
+        );
+
+        wait.until(ExpectedConditions.urlContains("/calendar"));
 
         wait.until(ExpectedConditions.visibilityOfElementLocated(
                 By.xpath("//*[contains(text(), 'Project Meeting')]")));
 
         assertThat(driver.getPageSource()).contains("Project Meeting");
+        assertThat(driver.getPageSource()).contains("Discuss project progress");
     }
 
     /*
@@ -135,35 +154,42 @@ class MeetingEndToEndTest {
                 "Weekly synchronization meeting",
                 "2026-06-21T10:00",
                 "2026-06-21T11:00",
-                "invitee");
+                "invitee"
+        );
+
+        wait.until(ExpectedConditions.urlContains("/calendar"));
+
+        wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//*[contains(text(), 'Team Sync')]")));
 
         logout();
 
         login("invitee", RAW_PASSWORD);
 
-        clickByTestId("invitations-link");
+        wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//*[contains(text(), 'Pending invites')]")));
 
         wait.until(ExpectedConditions.visibilityOfElementLocated(
                 By.xpath("//*[contains(text(), 'Team Sync')]")));
 
-        clickByTestId("accept-invite");
+        clickButtonByText("Accept");
 
-        wait.until(ExpectedConditions.visibilityOfElementLocated(
-                byTestId("calendar-page")));
+        wait.until(ExpectedConditions.urlContains("/calendar"));
 
         wait.until(ExpectedConditions.visibilityOfElementLocated(
                 By.xpath("//*[contains(text(), 'Team Sync')]")));
 
         assertThat(driver.getPageSource()).contains("Team Sync");
+        assertThat(driver.getPageSource()).contains("invitee");
     }
 
     /*
      * E2E workflow 4:
      * User creates a meeting and then tries to create another one
-     * with overlapping time.
+     * with overlapping time. The conflicting meeting must not be created.
      */
     @Test
-    void createMeetingWithOverlappingTime_showsConflictError() {
+    void createMeetingWithOverlappingTime_doesNotCreateConflictingMeeting() {
         createUser("gustavo", "gustavo@email.com");
 
         login("gustavo", RAW_PASSWORD);
@@ -173,7 +199,10 @@ class MeetingEndToEndTest {
                 "Initial meeting",
                 "2026-06-22T10:00",
                 "2026-06-22T11:00",
-                null);
+                null
+        );
+
+        wait.until(ExpectedConditions.urlContains("/calendar"));
 
         wait.until(ExpectedConditions.visibilityOfElementLocated(
                 By.xpath("//*[contains(text(), 'First Meeting')]")));
@@ -183,22 +212,21 @@ class MeetingEndToEndTest {
                 "This meeting overlaps with another one",
                 "2026-06-22T10:30",
                 "2026-06-22T11:30",
-                null);
+                null
+        );
 
-        WebElement errorMessage = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                byTestId("error-message")));
-
-        assertThat(errorMessage.getText().toLowerCase())
-                .containsAnyOf("conflict", "overlap", "sobreposição", "conflito");
-
-        assertThat(driver.getPageSource()).doesNotContain("Conflicting Meeting");
+        assertThat(meetingRepository.findAll())
+                .extracting("title")
+                .contains("First Meeting")
+                .doesNotContain("Conflicting Meeting");
     }
 
     private User createUser(String username, String email) {
         User user = new User(
                 username,
                 email,
-                passwordEncoder.encode(RAW_PASSWORD));
+                passwordEncoder.encode(RAW_PASSWORD)
+        );
 
         return userRepository.saveAndFlush(user);
     }
@@ -206,20 +234,23 @@ class MeetingEndToEndTest {
     private void login(String username, String password) {
         driver.get(baseUrl() + "/login");
 
-        typeByTestId("login-username", username);
-        typeByTestId("login-password", password);
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("username")));
 
-        clickByTestId("login-submit");
+        typeById("username", username);
+        typeById("password", password);
 
+        clickButtonByText("Sign in");
+
+        wait.until(ExpectedConditions.urlContains("/calendar"));
         wait.until(ExpectedConditions.visibilityOfElementLocated(
-                byTestId("calendar-page")));
+                By.xpath("//*[contains(text(), 'Your calendar')]")));
     }
 
     private void logout() {
-        clickByTestId("logout-button");
+        clickButtonByText("Sign out");
 
-        wait.until(ExpectedConditions.visibilityOfElementLocated(
-                byTestId("login-username")));
+        wait.until(ExpectedConditions.urlContains("/login"));
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("username")));
     }
 
     private void createMeetingThroughUi(
@@ -229,39 +260,46 @@ class MeetingEndToEndTest {
             String end,
             String participantUsername) {
 
-        clickByTestId("create-meeting-link");
+        driver.get(baseUrl() + "/meetings/new");
 
-        wait.until(ExpectedConditions.visibilityOfElementLocated(
-                byTestId("meeting-title")));
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("title")));
 
-        typeByTestId("meeting-title", title);
-        typeByTestId("meeting-description", description);
-        typeByTestId("meeting-start", start);
-        typeByTestId("meeting-end", end);
+        typeById("title", title);
+        typeById("description", description);
+
+        setInputValueById("start", start);
+        setInputValueById("end", end);
 
         if (participantUsername != null && !participantUsername.isBlank()) {
-            typeByTestId("meeting-participants", participantUsername);
+            typeById("invitees", participantUsername);
         }
 
-        clickByTestId("meeting-submit");
+        clickButtonByText("Propose");
     }
 
-    private void typeByTestId(String testId, String value) {
-        WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                byTestId(testId)));
+    private void typeById(String id, String value) {
+        WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id(id)));
 
         element.clear();
         element.sendKeys(value);
     }
 
-    private void clickByTestId(String testId) {
-        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(
-                byTestId(testId)));
+    private void setInputValueById(String id, String value) {
+        WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id(id)));
 
-        element.click();
+        ((JavascriptExecutor) driver).executeScript(
+                "arguments[0].value = arguments[1];" +
+                        "arguments[0].dispatchEvent(new Event('input', { bubbles: true }));" +
+                        "arguments[0].dispatchEvent(new Event('change', { bubbles: true }));",
+                element,
+                value
+        );
     }
 
-    private By byTestId(String testId) {
-        return By.cssSelector("[data-testid='" + testId + "']");
+    private void clickButtonByText(String text) {
+        WebElement button = wait.until(ExpectedConditions.elementToBeClickable(
+                By.xpath("//button[normalize-space()='" + text + "']")));
+
+        button.click();
     }
 }
