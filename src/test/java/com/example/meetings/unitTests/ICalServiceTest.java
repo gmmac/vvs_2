@@ -1,4 +1,4 @@
-package com.example.unitTests;
+package com.example.meetings.unitTests;
 
 import com.example.meetings.model.InviteStatus;
 import com.example.meetings.model.Meeting;

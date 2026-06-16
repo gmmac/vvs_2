@@ -1,4 +1,4 @@
-package com.example.integrationTests.thirdParties;
+package com.example.meetings.integrationTests.thirdParties;
 
 import com.example.meetings.discover.AgendaLxProvider;
 import com.example.meetings.discover.DiscoveredEvent;
